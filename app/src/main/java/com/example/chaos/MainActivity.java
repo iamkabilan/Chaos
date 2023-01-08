@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatImageView;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ActivityCompat;
 
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     WeatherData weatherData;
 
     AppCompatTextView location, temperature, condition;
+    AppCompatImageView weatherIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         location = findViewById(R.id.locationText);
         temperature = findViewById(R.id.tempText);
         condition = findViewById(R.id.condText);
+        weatherIcon = findViewById(R.id.weatherIcon);
 
         if (permissionGrantedApprox || permissionGrantedFine) {
 
@@ -68,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
                             temperature.setText(temp);
                             temp = weatherData.getWeather().get(0).getDescription();
                             condition.setText(temp);
+
+                            temp = "w"+weatherData.getWeather().get(0).getIcon();
+                            weatherIcon.setBackgroundResource(getResources().getIdentifier(temp,"drawable",getPackageName()));
                         }
                     } else {
                         Log.d("Error: ", response.message());
@@ -104,13 +110,13 @@ public class MainActivity extends AppCompatActivity {
             lon = lastKnownLocation.getLongitude();
         }
 
-        LocationListener locationListener = location -> {
-            Log.d("Lat and Long", "Lat "+location.getLatitude() +"Long "+location.getLongitude());
-            lat = location.getLatitude();
-            lon = location.getLongitude();
-        };
-
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+//        LocationListener locationListener = location -> {
+//            Log.d("Lat and Long", "Lat "+location.getLatitude() +"Long "+location.getLongitude());
+//            lat = location.getLatitude();
+//            lon = location.getLongitude();
+//        };
+//
+//        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
     }
 
     @Override

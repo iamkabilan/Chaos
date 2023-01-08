@@ -1,14 +1,14 @@
 package com.example.chaos.Data;
 
 public class Main{
-	private Object temp;
+	private double temp;
 	private Object tempMin;
 	private int humidity;
 	private int pressure;
 	private Object feelsLike;
 	private Object tempMax;
 
-	public Object getTemp(){
+	public double getTemp(){
 		return temp;
 	}
 

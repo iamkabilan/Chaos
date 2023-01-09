@@ -2,6 +2,7 @@ package com.example.chaos;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -17,6 +18,13 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ActivityCompat;
 
 import com.example.chaos.Data.WeatherData;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -52,6 +60,11 @@ public class MainActivity extends AppCompatActivity {
         weatherIcon = findViewById(R.id.weatherIcon);
 
         if (permissionGrantedApprox || permissionGrantedFine) {
+            File file = new File(getFilesDir(), "weather-data.txt");
+            if (file.exists()) {
+
+                readDataOffline();
+            }
 
             retrofit = new Retrofit.Builder().baseUrl("https://api.openweathermap.org/data/2.5/")
                     .addConverterFactory(GsonConverterFactory.create()).build();
@@ -65,15 +78,20 @@ public class MainActivity extends AppCompatActivity {
                     if (response.isSuccessful()) {
                         weatherData = response.body();
                         if (weatherData != null) {
-                            String temp = weatherData.getName() + ", " + weatherData.getSys().getCountry();
-                            location.setText(temp);
-                            temp = String.format("%.2f", weatherData.getMain().getTemp() - 274.15) + "° C";
+                            String locationStr, condStr, weatherIconStr;
+                            double tempDouble;
+                            locationStr = weatherData.getName() + ", " + weatherData.getSys().getCountry();
+                            location.setText(locationStr);
+                            tempDouble = weatherData.getMain().getTemp() - 273.15;
+                            String temp = String.format("%.2f", weatherData.getMain().getTemp() - 273.15) + "° C";
                             temperature.setText(temp);
-                            temp = weatherData.getWeather().get(0).getDescription();
-                            condition.setText(temp);
+                            condStr = weatherData.getWeather().get(0).getDescription();
+                            condition.setText(condStr);
 
-                            temp = "w"+weatherData.getWeather().get(0).getIcon();
-                            weatherIcon.setBackgroundResource(getResources().getIdentifier(temp,"drawable",getPackageName()));
+                            weatherIconStr = "w" + weatherData.getWeather().get(0).getIcon();
+                            weatherIcon.setBackgroundResource(getResources().getIdentifier(weatherIconStr, "drawable", getPackageName()));
+
+                            storeDataOffline(locationStr, tempDouble, condStr, weatherIconStr);
                         }
                     } else {
                         Log.d("Error: ", response.message());
@@ -105,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         }
         Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         if (lastKnownLocation != null) {
-            Log.d("Lat and Long", "Lat "+lastKnownLocation.getLatitude() +"Long "+lastKnownLocation.getLongitude());
+            Log.d("Lat and Long", "Lat " + lastKnownLocation.getLatitude() + "Long " + lastKnownLocation.getLongitude());
             lat = lastKnownLocation.getLatitude();
             lon = lastKnownLocation.getLongitude();
         }
@@ -145,6 +163,41 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 2);
         } else {
             permissionGrantedApprox = true;
+        }
+    }
+
+    @SuppressLint("DefaultLocale")
+    public void storeDataOffline(String location, double temperature, String weatherIcon, String weatherCondition) {
+        try {
+            File file = new File(getFilesDir(), "weather-data.txt");
+            FileOutputStream outputStream = new FileOutputStream(file, false);
+            outputStream.write(String.format("%s,%.2f,%s,%s\n", location, temperature, weatherIcon, weatherCondition).getBytes());
+            outputStream.close();
+
+        } catch (Exception e) {
+            Log.d("Exception: ", e.getMessage());
+        }
+    }
+
+    public void readDataOffline() {
+        try {
+            FileInputStream fis = new FileInputStream(getFilesDir()+"/weather-data.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+            String line = reader.readLine();
+            String[] data = line.split(",");
+            String locationStr = data[0] + "," + data[1];
+            location.setText(locationStr);
+            double temperatureDouble = Double.parseDouble(data[2]);
+            String temp =  temperatureDouble + "° C";
+            temperature.setText(temp);
+            String weatherIconStr = data[4];
+            weatherIcon.setBackgroundResource(getResources().getIdentifier(weatherIconStr, "drawable", getPackageName()));
+            String weatherConditionStr = data[3];
+            condition.setText(weatherConditionStr);
+        } catch (Exception e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.d("Exception: ", e.getMessage());
+            e.printStackTrace();
         }
     }
 }
